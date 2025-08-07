@@ -1,0 +1,4 @@
+commands:
+  - name: my-pipeline-execution
+    script: /path/to/my_pipeline.py
+    args: ["--option1", "value1", "--option2", "value2"]
