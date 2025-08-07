@@ -2,3 +2,33 @@ commands:
   - name: my-pipeline-execution
     script: /path/to/my_pipeline.py
     args: ["--option1", "value1", "--option2", "value2"]
+    description: "Execute the main data pipeline with configured parameters"
+    timeout: "5m"
+  
+  - name: echo-test
+    script: echo
+    args: ["Hello from MCPFier!"]
+    description: "Simple echo command for testing MCP server functionality"
+    timeout: "10s"
+  
+  - name: list-files
+    script: ls
+    args: ["-la"]
+    description: "List files in the current directory with detailed information"
+    timeout: "30s"
+  
+  - name: screenshot
+    script: "/usr/bin/chromium"
+    args: ["--headless", "--disable-gpu", "--screenshot", "--window-size=1280,720"]
+    description: "Take a screenshot of a webpage using headless Chrome"
+    container: "browserless/chrome:latest"
+    timeout: "60s"
+    env:
+      DISPLAY: ":99"
+  
+  - name: python-script
+    script: "python"
+    args: ["-c", "print('Hello from containerized Python!')"]
+    description: "Run Python script in isolated container environment"
+    container: "python:3.9-slim"
+    timeout: "30s"

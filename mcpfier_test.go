@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 )
@@ -9,7 +9,7 @@ import (
 // TestLoadConfig tests the loading of the configuration from a YAML file
 func TestLoadConfig(t *testing.T) {
 	// Create a temporary config file
-	tmpfile, err := ioutil.TempFile("", "config.yaml")
+	tmpfile, err := os.CreateTemp("", "config.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestRunCommand(t *testing.T) {
 	err := RunCommand(command)
 
 	w.Close()
-	out, _ := ioutil.ReadAll(r)
+	out, _ := io.ReadAll(r)
 	os.Stdout = oldStdout
 
 	if err != nil {
