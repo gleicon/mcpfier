@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -149,36 +150,46 @@ func (s *MCPFierServer) ExecuteCommand(ctx context.Context, commandName string, 
 }
 
 func main() {
-	// Check if running in legacy command mode
-	if len(os.Args) >= 2 && os.Args[1] != "--mcp" {
-		// Legacy command wrapper mode
-		commandName := os.Args[1]
+	// Check for special flags first
+	if len(os.Args) >= 2 {
+		switch os.Args[1] {
+		case "--setup":
+			printSetupInstructions()
+			return
+		case "--mcp":
+			// Continue to MCP server mode below
+		default:
+			// Legacy command mode - execute command directly
+			commandName := os.Args[1]
 
-		config, err := LoadConfig("config.yaml")
-		if err != nil {
-			log.Fatalf("Failed to load config: %v", err)
-		}
-
-		var foundCmd *Command
-		for _, cmd := range config.Commands {
-			if cmd.Name == commandName {
-				foundCmd = &cmd
-				break
+			configPath := findConfigFile()
+			config, err := LoadConfig(configPath)
+			if err != nil {
+				log.Fatalf("Failed to load config: %v", err)
 			}
-		}
 
-		if foundCmd == nil {
-			log.Fatalf("Command '%s' not found in config", commandName)
-		}
+			var foundCmd *Command
+			for _, cmd := range config.Commands {
+				if cmd.Name == commandName {
+					foundCmd = &cmd
+					break
+				}
+			}
 
-		if err := RunCommand(*foundCmd); err != nil {
-			log.Fatalf("Failed to run command '%s': %v", commandName, err)
+			if foundCmd == nil {
+				log.Fatalf("Command '%s' not found in config", commandName)
+			}
+
+			if err := RunCommand(*foundCmd); err != nil {
+				log.Fatalf("Failed to run command '%s': %v", commandName, err)
+			}
+			return
 		}
-		return
 	}
 
 	// MCP Server mode
-	mcpfierServer, err := NewMCPFierServer("config.yaml")
+	configPath := findConfigFile()
+	mcpfierServer, err := NewMCPFierServer(configPath)
 	if err != nil {
 		log.Fatalf("Failed to create MCP server: %v", err)
 	}
@@ -215,5 +226,140 @@ func getCommandDescription(cmd Command) string {
 		return cmd.Description
 	}
 	return fmt.Sprintf("Execute %s with configured arguments", cmd.Name)
+}
+
+func findConfigFile() string {
+	// Check environment variable first
+	if configPath := os.Getenv("MCPFIER_CONFIG"); configPath != "" {
+		if _, err := os.Stat(configPath); err == nil {
+			return configPath
+		}
+	}
+	
+	// Try various config file locations
+	candidates := []string{
+		"config.yaml",                    // Current directory
+		"./config.yaml",                 // Explicit current directory
+	}
+	
+	// Try config next to executable
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		candidates = append(candidates, filepath.Join(execDir, "config.yaml"))
+	}
+	
+	// Try user's home directory
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates, filepath.Join(homeDir, ".mcpfier", "config.yaml"))
+		candidates = append(candidates, filepath.Join(homeDir, "mcpfier", "config.yaml"))
+	}
+	
+	// Try system-wide locations
+	candidates = append(candidates, "/etc/mcpfier/config.yaml")
+	
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	
+	// Default to config.yaml if nothing found
+	return "config.yaml"
+}
+
+func printSetupInstructions() {
+	configPath := findConfigFile()
+	config, err := LoadConfig(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	fmt.Println("# MCPFier Setup Instructions")
+	fmt.Println()
+	
+	// Get current working directory and binary path
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "."
+	}
+	
+	execPath, err := os.Executable()
+	if err != nil {
+		execPath = "./mcpfier"
+	}
+	
+	fmt.Printf("## Claude Desktop Configuration\n\n")
+	fmt.Printf("Add this to your Claude Desktop MCP settings:\n\n")
+	fmt.Printf("```json\n")
+	fmt.Printf("{\n")
+	fmt.Printf("  \"mcpServers\": {\n")
+	fmt.Printf("    \"mcpfier\": {\n")
+	fmt.Printf("      \"command\": \"%s\",\n", execPath)
+	fmt.Printf("      \"args\": [\"--mcp\"],\n")
+	fmt.Printf("      \"cwd\": \"%s\"\n", cwd)
+	fmt.Printf("    }\n")
+	fmt.Printf("  }\n")
+	fmt.Printf("}\n")
+	fmt.Printf("```\n\n")
+	
+	fmt.Printf("## Available Tools\n\n")
+	fmt.Printf("Once configured, these %d tools will be available:\n\n", len(config.Commands))
+	
+	for _, cmd := range config.Commands {
+		fmt.Printf("### %s\n", cmd.Name)
+		if cmd.Description != "" {
+			fmt.Printf("**Description**: %s\n\n", cmd.Description)
+		}
+		
+		if cmd.Container != "" {
+			fmt.Printf("**Execution**: Docker container (`%s`)\n\n", cmd.Container)
+		} else {
+			fmt.Printf("**Execution**: Local system\n\n")
+		}
+		
+		fmt.Printf("**Test command**: \"Use the %s tool\"\n\n", cmd.Name)
+	}
+	
+	// Check for Docker requirements
+	dockerCommands := []string{}
+	for _, cmd := range config.Commands {
+		if cmd.Container != "" {
+			dockerCommands = append(dockerCommands, cmd.Container)
+		}
+	}
+	
+	if len(dockerCommands) > 0 {
+		fmt.Printf("## Docker Setup Required\n\n")
+		fmt.Printf("Some tools require Docker images. Run these commands:\n\n")
+		fmt.Printf("```bash\n")
+		
+		// Deduplicate images
+		imageSet := make(map[string]bool)
+		for _, image := range dockerCommands {
+			imageSet[image] = true
+		}
+		
+		for image := range imageSet {
+			fmt.Printf("docker pull %s\n", image)
+		}
+		fmt.Printf("```\n\n")
+	}
+	
+	fmt.Printf("## Testing\n\n")
+	fmt.Printf("1. Start Claude Desktop with the MCP configuration\n")
+	fmt.Printf("2. Try these test commands:\n")
+	for _, cmd := range config.Commands {
+		if cmd.Container == "" || cmd.Name == "echo-test" || cmd.Name == "list-files" {
+			fmt.Printf("   - \"Use the %s tool\"\n", cmd.Name)
+		}
+	}
+	fmt.Printf("\n")
+	
+	fmt.Printf("## Troubleshooting\n\n")
+	fmt.Printf("- **Binary path**: Ensure the command path points to: `%s`\n", execPath)
+	fmt.Printf("- **Config file**: Using config at: `%s`\n", configPath)
+	fmt.Printf("- **Working directory**: Current directory: `%s`\n", cwd)
+	fmt.Printf("- **Docker**: Ensure Docker is running for containerized tools\n")
+	fmt.Printf("- **Permissions**: Ensure MCPFier has execute permissions\n\n")
 }
 
