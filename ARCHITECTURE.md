@@ -26,24 +26,28 @@ MCPFier is designed as a bridge between traditional command-line tools and the M
 ### Component Details
 
 #### 1. Configuration System
+
 - **File Format**: YAML-based configuration (`config.yaml`)
 - **Hot Reload**: Currently requires restart (future enhancement)
 - **Validation**: Schema validation on startup
 - **Extensibility**: Supports arbitrary metadata fields
 
 #### 2. Command Registry
+
 - **Discovery**: Automatic command discovery from configuration
 - **Registration**: Dynamic MCP tool registration
 - **Lookup**: Efficient command resolution by name
 - **Metadata**: Maintains command descriptions and constraints
 
 #### 3. Execution Engine
+
 - **Local Execution**: Direct process execution on host
 - **Container Execution**: Docker-based isolated execution
 - **Environment Management**: Per-command environment variables
 - **Timeout Handling**: Configurable execution timeouts
 
 #### 4. MCP Protocol Handler
+
 - **Transport**: Stdio-based communication
 - **Message Handling**: Full MCP specification compliance
 - **Tool Management**: Dynamic tool registration and invocation

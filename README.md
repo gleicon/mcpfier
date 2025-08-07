@@ -1,48 +1,76 @@
 # MCPFier
 
-MCPFier is a Model Context Protocol (MCP) server that enables secure, configurable execution of commands and scripts through a standardized interface. It transforms YAML-defined commands into MCP tools that can be consumed by any MCP-compatible client or LLM, supporting both local execution and containerized isolation.
+MCPFier transforms any command, script, or tool into a standardized MCP (Model Context Protocol) server that LLMs can use seamlessly.
 
-## Overview
+Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundled config for examples.
 
-MCPFier bridges the gap between internal tooling and LLM accessibility by providing:
+## Quick Start
 
-- **Unified Tool Interface**: Convert any script, command, or workflow into standardized MCP tools
-- **Dual Execution Modes**: Local execution for trusted environments, containerized execution for isolation
-- **Security by Design**: Sandboxed execution with configurable resource limits and access control
-- **Enterprise Ready**: Replace fragmented tooling landscapes with a single, manageable interface
+1. **Configure commands** in `config.yaml`:
+
+   ```yaml
+   commands:
+     - name: get-weather
+       script: curl
+       args: ["https://wttr.in/?format=3"]
+       description: "Get current weather"
+   ```
+
+2. **Generate setup instructions**:
+
+   ```bash
+   ./mcpfier --setup
+   ```
+
+3. **Add to Claude Desktop** using the JSON configuration from step 2
+
+4. **Use in Claude**: "Use the get-weather tool"
 
 ## Features
 
-- **MCP Protocol Compliance**: Full implementation using [github.com/mark3labs/mcp-go] framework
-- **YAML Configuration**: Simple, declarative command definitions
-- **Container Support**: Execute commands in Docker containers for isolation
-- **Environment Management**: Per-command environment variable configuration
-- **Legacy Compatibility**: Maintains backward compatibility with command-line usage
-- **Timeout Controls**: Configurable execution timeouts for reliability
-- **Error Handling**: Comprehensive error reporting and logging
+- **Universal Tool Interface**: Any script becomes an MCP tool
+- **Dual Execution**: Local commands or isolated Docker containers
+- **Zero Configuration**: Automatic setup for Claude Desktop
+- **Enterprise Ready**: Security, logging, and resource management
+- **Legacy Compatible**: Works as traditional CLI tool
 
-## Architecture
+## Configuration
 
-### Core Components
+Commands are defined in `config.yaml`:
 
-1. **Command Registry**: Loads and manages commands from YAML configuration
-2. **Execution Engine**: Handles both local and containerized command execution
-3. **MCP Server**: Exposes commands as standardized MCP tools via stdio transport
-4. **Security Layer**: Provides isolation and resource management (containerized mode)
+```yaml
+commands:
+  # Local execution
+  - name: list-files
+    script: ls
+    args: ["-la"]
+    description: "List directory contents"
+    timeout: "10s"
 
-### Execution Modes
+  # Containerized execution  
+  - name: python-analysis
+    script: python
+    args: ["/app/analyze.py"]
+    description: "Run data analysis"
+    container: "python:3.9-slim"
+    timeout: "5m"
+    env:
+      DATA_SOURCE: "production"
+```
 
-- **Local Mode**: Direct execution on the host system (fast, less isolated)
-- **Container Mode**: Execution within Docker containers (secure, isolated)
+### Configuration Fields
+
+| Field         | Required | Description                |
+| ------------- | -------- | -------------------------- |
+| `name`        | Yes      | Unique tool identifier     |
+| `script`      | Yes      | Command or executable path |
+| `args`        | No       | Command arguments          |
+| `description` | No       | Tool description for LLMs  |
+| `container`   | No       | Docker image for isolation |
+| `timeout`     | No       | Execution timeout          |
+| `env`         | No       | Environment variables      |
 
 ## Installation
-
-### Prerequisites
-
-- Go 1.21 or later
-- Docker (for containerized execution)
-
-### Build from Source
 
 ```bash
 git clone https://github.com/gleicon/mcpfier.git
@@ -50,227 +78,65 @@ cd mcpfier
 go build -o mcpfier
 ```
 
-### Install Dependencies
+## Usage Modes
+
+### MCP Server (Primary)
 
 ```bash
-go mod download
+./mcpfier --mcp    # Start MCP server
+./mcpfier --setup  # Generate Claude Desktop config
 ```
 
-## Configuration
-
-MCPFier uses a YAML configuration file (`config.yaml`) to define available commands. Each command becomes an MCP tool automatically.
-
-### Basic Configuration Structure
-
-```yaml
-commands:
-  - name: command-name
-    script: /path/to/executable
-    args: ["arg1", "arg2"]
-    description: "Human-readable description"
-    timeout: "30s"
-    container: "optional/docker:image"
-    env:
-      KEY: "value"
-```
-
-### Configuration Fields
-
-| Field         | Type              | Required | Description                              |
-| ------------- | ----------------- | -------- | ---------------------------------------- |
-| `name`        | string            | Yes      | Unique identifier for the command/tool   |
-| `script`      | string            | Yes      | Path to executable or command to run     |
-| `args`        | []string          | No       | Arguments to pass to the script          |
-| `description` | string            | No       | Description shown to MCP clients         |
-| `timeout`     | string            | No       | Execution timeout (e.g., "30s", "5m")    |
-| `container`   | string            | No       | Docker image for containerized execution |
-| `env`         | map[string]string | No       | Environment variables                    |
-
-### Example Configurations
-
-#### Local Command Execution
-
-```yaml
-commands:
-  - name: list-files
-    script: ls
-    args: ["-la"]
-    description: "List files in current directory"
-    timeout: "10s"
-```
-
-#### Containerized Execution
-
-```yaml
-commands:
-  - name: python-analysis
-    script: python
-    args: ["/app/analyze.py"]
-    description: "Run data analysis in isolated Python environment"
-    container: "python:3.9-slim"
-    timeout: "5m"
-    env:
-      PYTHONPATH: "/app"
-      DATA_SOURCE: "production"
-```
-
-#### Web Screenshot Tool
-```yaml
-commands:
-  - name: screenshot
-    script: "/usr/bin/chromium"
-    args: ["--headless", "--disable-gpu", "--screenshot"]
-    description: "Capture webpage screenshots"
-    container: "browserless/chrome:latest"
-    timeout: "60s"
-    env:
-      DISPLAY: ":99"
-```
-
-## Usage
-
-### MCP Server Mode
-
-Start MCPFier as an MCP server (primary mode):
+### CLI Tool (Legacy)
 
 ```bash
-./mcpfier --mcp
+./mcpfier command-name  # Execute command directly
 ```
 
-The server will:
-- Load configuration from `config.yaml`
-- Register each command as an MCP tool
-- Listen on stdio for MCP protocol messages
-- Execute commands based on client requests
+## Architecture
 
-### Test Command Mode
+MCPFier uses a clean modular architecture:
 
-MCPFier can test the configuration and command locally before being attached to a LLM:
+- **Configuration**: YAML-based command definitions with auto-discovery
+- **Execution**: Pluggable backends (local, Docker, future: Kubernetes, Lambda)
+- **MCP Server**: Protocol-compliant stdio server using mark3labs/mcp-go
+- **Security**: Container isolation, resource limits, sandboxing
 
-```bash
-./mcpfier command-name
-```
+## Security
 
-This mode executes the specified command directly without MCP protocol overhead.
-
-### Integration with MCP Clients
-
-MCPFier can be integrated with any MCP-compatible client. Example client configuration:
-
-```json
-{
-  "name": "mcpfier",
-  "command": "/path/to/mcpfier",
-  "args": ["--mcp"],
-  "type": "stdio"
-}
-```
-
-## Security Considerations
-
-### Local Execution Security
-
-- Commands run with the same privileges as the MCPFier process
-- Suitable for trusted environments and internal tooling
-- Consider running MCPFier with restricted user privileges
-
-### Container Execution Security
-
-- Commands execute within isolated Docker containers
-- No access to host filesystem by default
-- Network isolation available through Docker configuration
-- Resource limits can be imposed via container runtime
-
-### Best Practices
-
-1. Use containerized execution for untrusted or external commands
-2. Define explicit timeouts for all commands
-3. Limit environment variable exposure
-4. Use non-root containers when possible
-5. Implement proper logging and monitoring
-
-## Testing
-
-Run the test suite:
-
-```bash
-go test ./...
-```
-
-Tests cover:
-- Configuration loading and validation
-- Command execution (both local and containerized)
-- MCP protocol compliance
-- Error handling scenarios
+- **Local Mode**: Fast execution, same privileges as MCPFier
+- **Container Mode**: Complete isolation, no host access, resource limits
+- **Best Practices**: Use containers for untrusted code, define timeouts, limit privileges
 
 ## Use Cases
 
-### Enterprise Integration
-- Expose n8n workflows as MCP tools
-- Provide LLM access to internal APIs and databases
-- Standardize data pipeline execution
-- Enable secure AI agent interactions
+- **Enterprise Integration**: Expose n8n workflows, internal APIs, data pipelines
+- **Development Tools**: Linting, testing, building, deployment automation  
+- **Infrastructure**: Health checks, log analysis, backup operations
+- **AI Agents**: Enable LLMs to use specialized tools and services
 
-### Development Tools
-- Code analysis and linting tools
-- Build and deployment automation
-- Testing framework integration
-- Documentation generation
+## Testing
 
-### Data Processing
-- ETL pipeline execution
-- Report generation
-- Data validation and cleaning
-- Analytics and visualization
-
-### Infrastructure Operations
-- Health checks and monitoring
-- Log analysis and alerting
-- Backup and recovery operations
-- System administration tasks
-
-
-
-## API Reference
-
-### MCP Tools
-
-Each configured command becomes an MCP tool with:
-
-- **Name**: Matches the command name from configuration
-- **Description**: Uses the description field or auto-generates
-- **Input Schema**: Accepts additional arguments (future enhancement)
-- **Output**: Returns command output as text content
-
-### Error Handling
-
-MCPFier returns structured error responses for:
-
-- Command not found
-- Execution failures
-- Timeout exceeded
-- Container runtime errors
-
-## Troubleshooting
-
-### Common Issues
-
-**Command not found**: Verify the command name exists in `config.yaml`
-
-**Container execution fails**: Ensure Docker is running and the specified image exists
-
-**Permission denied**: Check file permissions and user privileges
-
-**Timeout exceeded**: Increase timeout value or optimize command performance
-
-### Debug Mode
-
-Enable verbose logging by setting environment variables:
 ```bash
-export MCP_DEBUG=1
-./mcpfier --mcp
+go test ./...              # Run all tests
+./mcpfier echo-test        # Test CLI mode
+./mcpfier --setup          # Test MCP configuration
 ```
+
+## Documentation
+
+- **[SETUP.md](SETUP.md)** - Detailed setup instructions
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture
+- **[SECURITY.md](SECURITY.md)** - Security guide and best practices
+- **[ROADMAP.md](ROADMAP.md)** - Future development plans
+
+## Contributing
+
+We welcome contributions! Please see our documentation for:
+- Architecture decisions and design patterns
+- Security considerations and testing requirements
+- Roadmap and planned features
 
 ## License
 
-MCPFier is released under the MIT License. See LICENSE file for details.
+MIT License - see LICENSE file for details.
