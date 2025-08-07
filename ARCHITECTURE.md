@@ -87,10 +87,31 @@ MCPFier is designed as a bridge between traditional command-line tools and the M
 
 ## Implementation Details
 
+### Package Structure (Post-Refactoring)
+
+```
+mcpfier/
+├── main.go                    # CLI entry point
+├── internal/
+│   ├── config/               # Configuration management
+│   │   ├── config.go         # Types and loading logic
+│   │   └── config_test.go    # Configuration tests
+│   ├── executor/             # Command execution
+│   │   ├── executor.go       # Executor interface and service
+│   │   ├── local.go          # Local execution implementation
+│   │   ├── container.go      # Container execution implementation
+│   │   └── executor_test.go  # Execution tests
+│   ├── server/               # MCP server implementation
+│   │   └── server.go         # MCP server logic and handlers
+│   └── setup/                # Setup instructions
+│       └── setup.go          # Setup command implementation
+└── mcpfier_test.go           # Integration tests
+```
+
 ### Core Types
 
 ```go
-// Command represents a configurable command
+// config/config.go
 type Command struct {
     Name        string            `yaml:"name"`        // Unique identifier
     Script      string            `yaml:"script"`      // Executable path
@@ -101,14 +122,25 @@ type Command struct {
     Env         map[string]string `yaml:"env"`         // Environment vars
 }
 
-// Config holds the complete configuration
 type Config struct {
     Commands []Command `yaml:"commands"`
 }
 
-// MCPFierServer manages the server instance
+// executor/executor.go
+type Executor interface {
+    Execute(ctx context.Context, cmd *config.Command) (string, error)
+}
+
+type Service struct {
+    local     *LocalExecutor
+    container *ContainerExecutor
+}
+
+// server/server.go
 type MCPFierServer struct {
-    config *Config
+    config   *config.Config
+    executor *executor.Service
+    server   *server.MCPServer
 }
 ```
 

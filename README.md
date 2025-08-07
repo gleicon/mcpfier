@@ -13,7 +13,7 @@ MCPFier bridges the gap between internal tooling and LLM accessibility by provid
 
 ## Features
 
-- **MCP Protocol Compliance**: Full implementation using mark3labs/mcp-go framework
+- **MCP Protocol Compliance**: Full implementation using [github.com/mark3labs/mcp-go] framework
 - **YAML Configuration**: Simple, declarative command definitions
 - **Container Support**: Execute commands in Docker containers for isolation
 - **Environment Management**: Per-command environment variable configuration
@@ -76,19 +76,20 @@ commands:
 
 ### Configuration Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Unique identifier for the command/tool |
-| `script` | string | Yes | Path to executable or command to run |
-| `args` | []string | No | Arguments to pass to the script |
-| `description` | string | No | Description shown to MCP clients |
-| `timeout` | string | No | Execution timeout (e.g., "30s", "5m") |
-| `container` | string | No | Docker image for containerized execution |
-| `env` | map[string]string | No | Environment variables |
+| Field         | Type              | Required | Description                              |
+| ------------- | ----------------- | -------- | ---------------------------------------- |
+| `name`        | string            | Yes      | Unique identifier for the command/tool   |
+| `script`      | string            | Yes      | Path to executable or command to run     |
+| `args`        | []string          | No       | Arguments to pass to the script          |
+| `description` | string            | No       | Description shown to MCP clients         |
+| `timeout`     | string            | No       | Execution timeout (e.g., "30s", "5m")    |
+| `container`   | string            | No       | Docker image for containerized execution |
+| `env`         | map[string]string | No       | Environment variables                    |
 
 ### Example Configurations
 
 #### Local Command Execution
+
 ```yaml
 commands:
   - name: list-files
@@ -99,6 +100,7 @@ commands:
 ```
 
 #### Containerized Execution
+
 ```yaml
 commands:
   - name: python-analysis
@@ -141,9 +143,9 @@ The server will:
 - Listen on stdio for MCP protocol messages
 - Execute commands based on client requests
 
-### Legacy Command Mode
+### Test Command Mode
 
-MCPFier maintains backward compatibility for direct command execution:
+MCPFier can test the configuration and command locally before being attached to a LLM:
 
 ```bash
 ./mcpfier command-name
@@ -167,17 +169,20 @@ MCPFier can be integrated with any MCP-compatible client. Example client configu
 ## Security Considerations
 
 ### Local Execution Security
+
 - Commands run with the same privileges as the MCPFier process
 - Suitable for trusted environments and internal tooling
 - Consider running MCPFier with restricted user privileges
 
 ### Container Execution Security
+
 - Commands execute within isolated Docker containers
 - No access to host filesystem by default
 - Network isolation available through Docker configuration
 - Resource limits can be imposed via container runtime
 
 ### Best Practices
+
 1. Use containerized execution for untrusted or external commands
 2. Define explicit timeouts for all commands
 3. Limit environment variable exposure
@@ -224,30 +229,14 @@ Tests cover:
 - Backup and recovery operations
 - System administration tasks
 
-## Roadmap
 
-### Phase 1 (Current)
-- Basic MCP server implementation
-- Local and containerized execution
-- YAML configuration support
-
-### Phase 2 (Planned)
-- Remote server capabilities with authentication
-- Resource usage monitoring and limits
-- Command chaining and workflows
-- Advanced security policies
-
-### Phase 3 (Future)
-- Kubernetes job execution
-- Scheduled task support
-- LLM-to-LLM communication patterns
-- Web UI for configuration management
 
 ## API Reference
 
 ### MCP Tools
 
 Each configured command becomes an MCP tool with:
+
 - **Name**: Matches the command name from configuration
 - **Description**: Uses the description field or auto-generates
 - **Input Schema**: Accepts additional arguments (future enhancement)
@@ -256,6 +245,7 @@ Each configured command becomes an MCP tool with:
 ### Error Handling
 
 MCPFier returns structured error responses for:
+
 - Command not found
 - Execution failures
 - Timeout exceeded
@@ -281,22 +271,6 @@ export MCP_DEBUG=1
 ./mcpfier --mcp
 ```
 
-## Contributing
-
-We welcome contributions to MCPFier. Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request with clear description
-
 ## License
 
 MCPFier is released under the MIT License. See LICENSE file for details.
-
-## Support
-
-For issues, feature requests, or questions:
-- Open an issue on GitHub
-- Check existing documentation
-- Review configuration examples
