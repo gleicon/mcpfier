@@ -20,7 +20,15 @@ type Command struct {
 
 // Config holds all the commands from the YAML file
 type Config struct {
-	Commands []Command `yaml:"commands"`
+	Commands  []Command       `yaml:"commands"`
+	Analytics AnalyticsConfig `yaml:"analytics"`
+}
+
+// AnalyticsConfig holds analytics configuration
+type AnalyticsConfig struct {
+	Enabled      bool   `yaml:"enabled"`
+	DatabasePath string `yaml:"database_path"`
+	RetentionDays int   `yaml:"retention_days"`
 }
 
 // Load loads the configuration from a YAML file

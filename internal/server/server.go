@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gleicon/mcpfier/internal/analytics"
 	"github.com/gleicon/mcpfier/internal/config"
 	"github.com/gleicon/mcpfier/internal/executor"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -12,16 +13,33 @@ import (
 
 // MCPFierServer wraps the configuration and provides MCP tools
 type MCPFierServer struct {
-	config   *config.Config
-	executor *executor.Service
-	server   *server.MCPServer
+	config    *config.Config
+	executor  *executor.Service
+	server    *server.MCPServer
+	analytics analytics.Analytics
 }
 
 // New creates a new MCPFier server instance
 func New(cfg *config.Config) *MCPFierServer {
+	// Initialize analytics
+	var analyticsService analytics.Analytics = &analytics.NoOpAnalytics{}
+	
+	if cfg.Analytics.Enabled {
+		if cfg.Analytics.DatabasePath == "" {
+			cfg.Analytics.DatabasePath = "./analytics.db"
+		}
+		
+		if sqliteAnalytics, err := analytics.NewSQLiteAnalytics(cfg.Analytics.DatabasePath); err == nil {
+			analyticsService = sqliteAnalytics
+		}
+	}
+	
+	executorService := executor.New().WithAnalytics(analyticsService)
+	
 	return &MCPFierServer{
-		config:   cfg,
-		executor: executor.New(),
+		config:    cfg,
+		executor:  executorService,
+		analytics: analyticsService,
 		server: server.NewMCPServer(
 			"mcpfier",
 			"1.0.0",
@@ -74,4 +92,14 @@ func (s *MCPFierServer) executeCommand(ctx context.Context, commandName string) 
 func (s *MCPFierServer) Start() error {
 	s.RegisterTools()
 	return server.ServeStdio(s.server)
+}
+
+// Close closes the server and analytics
+func (s *MCPFierServer) Close() error {
+	return s.analytics.Close()
+}
+
+// GetAnalytics returns the analytics service
+func (s *MCPFierServer) GetAnalytics() analytics.Analytics {
+	return s.analytics
 }

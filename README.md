@@ -56,6 +56,12 @@ commands:
     timeout: "5m"
     env:
       DATA_SOURCE: "production"
+
+# Analytics configuration
+analytics:
+  enabled: true
+  database_path: "~/.mcpfier/analytics.db"
+  retention_days: 30
 ```
 
 ### Configuration Fields
@@ -70,6 +76,44 @@ commands:
 | `timeout`     | No       | Execution timeout          |
 | `env`         | No       | Environment variables      |
 
+### Analytics Configuration
+
+| Field            | Required | Description                           |
+| ---------------- | -------- | ------------------------------------- |
+| `enabled`        | No       | Enable/disable analytics (default: false) |
+| `database_path`  | No       | SQLite database path (supports ~ expansion) |
+| `retention_days` | No       | Days to retain analytics data         |
+
+### Configuration File Discovery
+
+MCPFier searches for `config.yaml` in the following order:
+
+1. Path specified by `MCPFIER_CONFIG` environment variable
+2. Current working directory (`./config.yaml`)
+3. Directory containing the mcpfier executable
+4. User's home directory (`~/.mcpfier/config.yaml` or `~/mcpfier/config.yaml`)
+5. System-wide location (`/etc/mcpfier/config.yaml`)
+
+Use `--config <path>` to specify a custom configuration file path.
+
+## Command Line Options
+
+```bash
+./mcpfier [OPTIONS] [COMMAND]
+
+Options:
+  --config, -c <path>    Specify custom configuration file path
+  --mcp                  Start MCP server mode
+  --setup                Generate Claude Desktop configuration
+  --analytics            Show usage analytics and statistics
+  --help, -h             Show help information
+
+Examples:
+  ./mcpfier --config ./my-config.yaml --mcp
+  ./mcpfier -c /etc/mcpfier/config.yaml echo-test
+  ./mcpfier --analytics --config ~/.mcpfier/config.yaml
+```
+
 ## Installation
 
 ```bash
@@ -83,14 +127,37 @@ go build -o mcpfier
 ### MCP Server (Primary)
 
 ```bash
-./mcpfier --mcp    # Start MCP server
-./mcpfier --setup  # Generate Claude Desktop config
+./mcpfier --mcp                    # Start MCP server
+./mcpfier --setup                  # Generate Claude Desktop config
+./mcpfier --mcp --config /path    # Use custom config file
 ```
 
 ### CLI Tool (Legacy)
 
 ```bash
-./mcpfier command-name  # Execute command directly
+./mcpfier command-name             # Execute command directly
+./mcpfier --config /path cmd-name  # Use custom config for command
+```
+
+### Analytics
+
+View usage statistics and command performance:
+
+```bash
+./mcpfier --analytics               # Show analytics for last 7 days
+./mcpfier --analytics --config /path # Use custom config for analytics
+```
+
+Analytics tracks:
+- Total commands executed
+- Success rates and error counts
+- Average execution times
+- Most frequently used commands
+
+**Note**: The analytics database directory must exist before starting MCPFier. Create the directory manually:
+
+```bash
+mkdir -p ~/.mcpfier  # For default config
 ```
 
 ## Architecture
@@ -121,6 +188,7 @@ MCPFier uses a clean modular architecture:
 go test ./...              # Run all tests
 ./mcpfier echo-test        # Test CLI mode
 ./mcpfier --setup          # Test MCP configuration
+./mcpfier --analytics      # Test analytics (requires ~/.mcpfier/ directory)
 ```
 
 ## Documentation

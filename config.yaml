@@ -32,3 +32,9 @@ commands:
     description: "Run Python script in isolated container environment"
     container: "python:3.9-slim"
     timeout: "30s"
+
+# Analytics configuration
+analytics:
+  enabled: true
+  database_path: "~/.mcpfier/analytics.db"  # Now supports ~ expansion
+  retention_days: 30
