@@ -19,6 +19,7 @@ type Executor interface {
 type Service struct {
 	local     *LocalExecutor
 	container *ContainerExecutor
+	webhook   *WebhookExecutor
 	analytics analytics.Analytics
 }
 
@@ -27,6 +28,7 @@ func New() *Service {
 	return &Service{
 		local:     NewLocalExecutor(),
 		container: NewContainerExecutor(),
+		webhook:   NewWebhookExecutor(),
 		analytics: &analytics.NoOpAnalytics{},
 	}
 }
@@ -45,7 +47,9 @@ func (s *Service) Execute(ctx context.Context, cmd *config.Command) (string, err
 	var output string
 	var err error
 	
-	if cmd.IsContainerized() {
+	if cmd.IsWebhook() {
+		output, err = s.webhook.Execute(ctx, cmd)
+	} else if cmd.IsContainerized() {
 		output, err = s.container.Execute(ctx, cmd)
 	} else {
 		output, err = s.local.Execute(ctx, cmd)
@@ -79,7 +83,9 @@ func getSessionID(ctx context.Context) string {
 
 // getExecutionMode returns the execution mode string
 func getExecutionMode(cmd *config.Command) string {
-	if cmd.IsContainerized() {
+	if cmd.IsWebhook() {
+		return "webhook"
+	} else if cmd.IsContainerized() {
 		return "container"
 	}
 	return "local"

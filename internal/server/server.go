@@ -19,7 +19,7 @@ type MCPFierServer struct {
 	analytics analytics.Analytics
 }
 
-// New creates a new MCPFier server instance
+// New creates a new MCPFier STDIO server instance
 func New(cfg *config.Config) *MCPFierServer {
 	// Initialize analytics
 	var analyticsService analytics.Analytics = &analytics.NoOpAnalytics{}

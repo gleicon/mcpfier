@@ -1,10 +1,10 @@
 # MCPFier
 
-MCPFier transforms any command, script, or tool into a standardized MCP (Model Context Protocol) server that LLMs can use seamlessly.
+MCPFier transforms any command, script, or tool into a standardized [MCP (Model Context Protocol)](https://modelcontextprotocol.io/docs/getting-started/intro) server that LLMs can use seamlessly. You can also create commands based on internal APIs or Webhooks. It is a no code platform to quickly augment 
 
-Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundled config for examples.
+Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundled config for examples. All you need is a MCP client enabled environment.
 
-## Quick Start
+## Quick Start for Claude Desktop
 
 1. **Configure commands** in `config.yaml`:
 
@@ -29,10 +29,12 @@ Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundl
 ## Features
 
 - **Universal Tool Interface**: Any script becomes an MCP tool
-- **Dual Execution**: Local commands or isolated Docker containers
+- **Dual Transport**: STDIO for desktop, HTTP for enterprise
+- **Authentication Ready**: API keys and OAuth 2.1 support
 - **Zero Configuration**: Automatic setup for Claude Desktop
-- **Enterprise Ready**: Security, logging, and resource management
-- **Legacy Compatible**: Works as traditional CLI tool
+- **Enterprise Ready**: Multi-client, authentication, analytics
+- **Container Isolation**: Local commands or Docker containers
+- **MCP 2025-06-18 Compliant**: Full specification compliance
 
 ## Configuration
 
@@ -78,11 +80,11 @@ analytics:
 
 ### Analytics Configuration
 
-| Field            | Required | Description                           |
-| ---------------- | -------- | ------------------------------------- |
-| `enabled`        | No       | Enable/disable analytics (default: false) |
+| Field            | Required | Description                                 |
+| ---------------- | -------- | ------------------------------------------- |
+| `enabled`        | No       | Enable/disable analytics (default: false)   |
 | `database_path`  | No       | SQLite database path (supports ~ expansion) |
-| `retention_days` | No       | Days to retain analytics data         |
+| `retention_days` | No       | Days to retain analytics data               |
 
 ### Configuration File Discovery
 
@@ -103,10 +105,12 @@ Use `--config <path>` to specify a custom configuration file path.
 
 Options:
   --config, -c <path>    Specify custom configuration file path
-  --mcp                  Start MCP server mode
+  --mcp                  Start MCP local STDIO mode
+  --server               Start MCP server mode (HTTP)
   --setup                Generate Claude Desktop configuration
   --analytics            Show usage analytics and statistics
   --help, -h             Show help information
+
 
 Examples:
   ./mcpfier --config ./my-config.yaml --mcp
@@ -124,13 +128,28 @@ go build -o mcpfier
 
 ## Usage Modes
 
-### MCP Server (Primary)
+MCPFier supports two transport modes to fit different use cases:
+
+### STDIO Mode (Default - for Claude Desktop)
+
+Perfect for local development and Claude Desktop integration:
 
 ```bash
-./mcpfier --mcp                    # Start MCP server
+./mcpfier --mcp                    # Start STDIO MCP server (default)
 ./mcpfier --setup                  # Generate Claude Desktop config
 ./mcpfier --mcp --config /path    # Use custom config file
 ```
+
+### HTTP Server Mode (Enterprise - with Authentication)
+
+For production deployments, multiple clients, and enterprise features:
+
+```bash
+./mcpfier --server                 # Start HTTP MCP server with authentication
+./mcpfier --server --config /path # HTTP server with custom config
+```
+
+**For complete HTTP server setup and authentication guide, see [SERVER.md](SERVER.md)**
 
 ### CLI Tool (Legacy)
 
@@ -149,10 +168,14 @@ View usage statistics and command performance:
 ```
 
 Analytics tracks:
+
 - Total commands executed
 - Success rates and error counts
 - Average execution times
 - Most frequently used commands
+- UPStream success and error codes
+
+If MCPFier is running on server mode you can access its html analytics dashboard. For instance, if it is running the default configuration it would be at (http://localhost:8080/mcpfier/analytics).
 
 **Note**: The analytics database directory must exist before starting MCPFier. Create the directory manually:
 
@@ -165,9 +188,11 @@ mkdir -p ~/.mcpfier  # For default config
 MCPFier uses a clean modular architecture:
 
 - **Configuration**: YAML-based command definitions with auto-discovery
+- **Transport**: Dual-mode support (STDIO for desktop, HTTP for enterprise)
 - **Execution**: Pluggable backends (local, Docker, future: Kubernetes, Lambda)
-- **MCP Server**: Protocol-compliant stdio server using mark3labs/mcp-go
-- **Security**: Container isolation, resource limits, sandboxing
+- **Authentication**: API keys and OAuth 2.1 using [mcp-go](https://github.com/mark3labs/mcp-go)
+- **MCP Server**: [MCP 2025-06-18](https://modelcontextprotocol.io/specification/2025-06-18) compliant
+- **Security**: Container isolation, authentication, resource limits
 
 ## Security
 
@@ -193,18 +218,25 @@ go test ./...              # Run all tests
 
 ## Documentation
 
-- **[SETUP.md](SETUP.md)** - Detailed setup instructions
+- **[SERVER.md](SERVER.md)** - HTTP server setup and authentication guide
+- **[SETUP.md](SETUP.md)** - Detailed setup instructions  
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture
-- **[SECURITY.md](SECURITY.md)** - Security guide and best practices
-- **[ROADMAP.md](ROADMAP.md)** - Future development plans
+- **[AUTHENTICATION.md](AUTHENTICATION.md)** - Technical details on authentication
+
+## External References
+
+- **[MCP Specification](https://modelcontextprotocol.io/specification/2025-06-18)** - Official Model Context Protocol 2025-06-18 specification
+- **[mcp-go Library](https://github.com/mark3labs/mcp-go)** - Go library for MCP implementation used by MCPFier
+- **[Claude Desktop](https://claude.ai/download)** - Desktop client that works with MCPFier STDIO mode
 
 ## Contributing
 
 We welcome contributions! Please see our documentation for:
+
 - Architecture decisions and design patterns
 - Security considerations and testing requirements
 - Roadmap and planned features
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see LICENSE file for details

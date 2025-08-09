@@ -49,6 +49,7 @@ MCPFier searches for `config.yaml` in this order:
 ## Testing
 
 After setup, test in Claude Desktop with:
+
 - "Use the echo-test tool"
 - "Use the get-weather tool"
 - "Use the list-files tool"
@@ -56,23 +57,27 @@ After setup, test in Claude Desktop with:
 ## Troubleshooting
 
 ### Config File Not Found
+
 ```
 2025/08/07 14:12:19 Failed to create MCP server: failed to load config: open config.yaml: no such file or directory
 ```
 
 **Solution**: Copy config to user directory:
+
 ```bash
 mkdir -p ~/.mcpfier
 cp config.yaml ~/.mcpfier/
 ```
 
 ### Permission Denied
+
 **Solution**: Make binary executable:
 ```bash
 chmod +x mcpfier
 ```
 
 ### Docker Commands Fail
+
 **Solution**: Pull required images:
 ```bash
 docker pull python:3.9-slim
@@ -80,7 +85,9 @@ docker pull browserless/chrome:latest
 ```
 
 ### Server Disconnects Immediately
+
 **Solution**: Check Claude Desktop logs and ensure:
+
 - Binary path is correct
 - Config file exists and is readable
 - No syntax errors in config.yaml
@@ -88,12 +95,15 @@ docker pull browserless/chrome:latest
 ## Advanced Configuration
 
 ### Custom Config Location
+
 Set environment variable:
+
 ```bash
 export MCPFIER_CONFIG="/custom/path/config.yaml"
 ```
 
 ### System-wide Installation
+
 ```bash
 # Install binary
 sudo cp mcpfier /usr/local/bin/
