@@ -4,3 +4,4 @@ mcpfier
 .claude/*
 # Added by goreleaser init:
 dist/
+*.log

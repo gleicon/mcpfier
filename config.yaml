@@ -32,6 +32,157 @@ commands:
     description: "Run Python script in isolated container environment"
     container: "python:3.9-slim"
     timeout: "30s"
+  
+  # Webhook/API Examples - Remote execution capabilities
+  - name: httpbin-get
+    description: "Test GET request to httpbin.org"
+    timeout: "10s"
+    webhook:
+      url: "https://httpbin.org/get"
+      method: "GET"
+      headers:
+        User-Agent: "MCPFier-Test/1.0"
+  
+  - name: httpbin-post-json
+    description: "Test POST request with JSON data to httpbin.org"
+    timeout: "10s"
+    webhook:
+      url: "https://httpbin.org/post"
+      method: "POST"
+      body: '{"message": "Hello from MCPFier!", "timestamp": "2024-01-01T00:00:00Z"}'
+      body_format: "json"
+      headers:
+        X-Custom-Header: "mcpfier-webhook"
+  
+  - name: github-api-user
+    description: "Get user information from GitHub API (requires token)"
+    timeout: "10s"
+    webhook:
+      url: "https://api.github.com/user"
+      method: "GET"
+      auth:
+        type: "bearer"
+        token: "${GITHUB_TOKEN}" # Set via environment variable
+      retry:
+        max_retries: 2
+        delay: "1s"
+        backoff: "exponential"
+  
+  - name: api-with-key-auth
+    description: "Example API call with API key authentication"
+    timeout: "15s"
+    webhook:
+      url: "https://httpbin.org/bearer"
+      method: "GET"
+      auth:
+        type: "api_key"
+        key: "your-api-key-here"
+        header: "X-API-Key"
+      retry:
+        max_retries: 3
+        delay: "2s"
+        status_codes: [429, 502, 503, 504]
+  
+  - name: webhook-basic-auth
+    description: "Example with basic authentication"
+    timeout: "10s"
+    webhook:
+      url: "https://httpbin.org/basic-auth/user/pass"
+      method: "GET"
+      auth:
+        type: "basic"
+        user: "user"
+        pass: "pass"
+
+# Server configuration
+server:
+  # Default transport mode (auto-selected based on CLI args)
+  # --mcp uses STDIO transport (no auth, single client)
+  # --server uses HTTP transport (with auth, multiple clients)
+  
+  http:
+    port: 8080
+    host: "localhost"  # Bind address
+    
+    # Authentication configuration
+    auth:
+      enabled: true
+      mode: "simple"  # "simple" or "enterprise"
+      
+      # Simple mode: API keys and basic auth
+      simple:
+        # API key authentication
+        api_keys:
+          - key: "mcpfier_dev_123456"
+            name: "development"
+            description: "Development environment key"
+            permissions: ["*"]  # All tools
+            
+          - key: "mcpfier_prod_789012"  
+            name: "production"
+            description: "Production environment key"
+            permissions: ["weather", "echo-test"]  # Limited tools
+            
+        # Optional: Basic authentication (username/password)
+        # basic_auth:
+        #   enabled: false
+        #   users:
+        #     - username: "admin"
+        #       password_hash: "$2a$10$..."  # bcrypt hash
+        #       permissions: ["*"]
+      
+      # Enterprise mode: Full OAuth 2.1 compliance
+      enterprise:
+        oauth21:
+          enabled: true
+          issuer: "https://auth.example.com"
+          audience: ["https://mcpfier.example.com/api"]
+          
+          # Client configuration for confidential clients
+          client_id: "${OAUTH_CLIENT_ID}"
+          client_secret: "${OAUTH_CLIENT_SECRET}"
+          
+          # Authorization server endpoints (auto-discovered if not specified)
+          authorization_endpoint: "https://auth.example.com/authorize"
+          token_endpoint: "https://auth.example.com/token"
+          jwks_uri: "https://auth.example.com/.well-known/jwks.json"
+          
+          # Supported scopes
+          scopes: ["mcp:read", "mcp:execute", "mcp:admin"]
+          
+        # Role-based access control
+        rbac:
+          enabled: true
+          roles:
+            - name: "admin"
+              permissions: ["*"]
+              description: "Full access to all tools"
+              
+            - name: "developer"
+              permissions: ["echo-test", "list-files", "weather"]
+              description: "Development tools access"
+              
+            - name: "analyst" 
+              permissions: ["weather", "search"]
+              description: "Read-only data access"
+          
+          # User-role mappings (for OAuth claims)
+          user_roles:
+            "user123@example.com": ["developer"]
+            "admin@example.com": ["admin"]
+            
+    # CORS configuration for web clients
+    cors:
+      enabled: true
+      allowed_origins: ["http://localhost:3000", "https://app.example.com"]
+      allowed_methods: ["GET", "POST", "OPTIONS"]
+      allowed_headers: ["Authorization", "Content-Type", "X-API-Key"]
+      
+    # Rate limiting
+    rate_limit:
+      enabled: true
+      requests_per_minute: 60
+      burst_size: 10
 
 # Analytics configuration
 analytics:

@@ -34,6 +34,8 @@ func main() {
 		showAnalytics()
 	case "mcp":
 		startMCPServer()
+	case "server":
+		startHTTPServer()
 	case "legacy":
 		executeLegacyCommand(args.commandName)
 	default:
@@ -50,6 +52,18 @@ func startMCPServer() {
 	mcpServer := server.New(cfg)
 	if err := mcpServer.Start(); err != nil {
 		log.Fatalf("Server error: %v", err)
+	}
+}
+
+func startHTTPServer() {
+	cfg, err := config.LoadFromDefaultPath()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	httpServer := server.NewHTTP(cfg)
+	if err := httpServer.Start(); err != nil {
+		log.Fatalf("HTTP server error: %v", err)
 	}
 }
 
@@ -140,7 +154,7 @@ func showAnalytics() {
 
 // cmdArgs represents parsed command line arguments
 type cmdArgs struct {
-	mode        string // "setup", "analytics", "mcp", "legacy"
+	mode        string // "setup", "analytics", "mcp", "server", "legacy"
 	configPath  string
 	commandName string // for legacy mode
 }
@@ -178,6 +192,10 @@ func parseArgs() cmdArgs {
 			args.mode = "mcp"
 			i++
 			
+		case arg == "--server":
+			args.mode = "server"
+			i++
+			
 		case arg == "--help" || arg == "-h":
 			printHelp()
 			os.Exit(0)
@@ -208,6 +226,7 @@ func printHelp() {
 Usage:
   mcpfier [options] [command]
   mcpfier [options] --mcp
+  mcpfier [options] --server
   mcpfier [options] --setup
   mcpfier [options] --analytics
 
@@ -216,22 +235,30 @@ Options:
   --help, -h          Show this help message
 
 Modes:
-  --mcp               Start MCP server (default mode)
+  --mcp               Start MCP STDIO server (default mode, for Claude Desktop)
+  --server            Start MCP HTTP server (with authentication, for enterprise)
   --setup             Generate Claude Desktop configuration
   --analytics         Show usage statistics
   command-name        Execute command directly (legacy mode)
 
 Examples:
-  mcpfier --mcp                           # Start MCP server
-  mcpfier --config /path/config.yaml --mcp  # Use custom config
+  mcpfier --mcp                           # Start STDIO MCP server (default)
+  mcpfier --server                        # Start HTTP MCP server with auth
+  mcpfier --config /path/config.yaml --server  # HTTP server with custom config
   mcpfier --analytics                     # Show statistics  
   mcpfier --setup                         # Generate setup info
   mcpfier echo-test                       # Run command directly
   mcpfier -c ~/.mcpfier/config.yaml echo-test  # Custom config + command
 
+Transport Modes:
+  STDIO (--mcp):      Single client, no authentication, perfect for Claude Desktop
+  HTTP (--server):    Multiple clients, authentication, enterprise features
+
 Environment Variables:
   MCPFIER_CONFIG      Path to configuration file (overridden by --config)
 
-For more information, see README.md
+For more information:
+  README.md           Getting started guide
+  SERVER.md           HTTP server and authentication setup
 `)
 }
