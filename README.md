@@ -1,6 +1,10 @@
 # MCPFier
 
-MCPFier transforms any command, script, or tool into a standardized [MCP (Model Context Protocol)](https://modelcontextprotocol.io/docs/getting-started/intro) server that LLMs can use seamlessly. You can also create commands based on internal APIs or Webhooks. It is a no code platform to quickly augment 
+MCPFier transforms any command, script, or tool into a standardized [MCP (Model Context Protocol)](https://modelcontextprotocol.io/docs/getting-started/intro) server that LLMs can use seamlessly. 
+
+You can also create commands based on internal APIs or Webhooks. It is a no code platform to quickly augment your AI development.
+
+There is a comprehensive analytics module and flexible configuration options.
 
 Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundled config for examples. All you need is a MCP client enabled environment.
 
@@ -35,6 +39,7 @@ Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundl
 - **Enterprise Ready**: Multi-client, authentication, analytics
 - **Container Isolation**: Local commands or Docker containers
 - **MCP 2025-06-18 Compliant**: Full specification compliance
+- **Analytics**: see below
 
 ## Configuration
 
@@ -173,9 +178,11 @@ Analytics tracks:
 - Success rates and error counts
 - Average execution times
 - Most frequently used commands
-- UPStream success and error codes
+- Upstream success and error codes
 
 If MCPFier is running on server mode you can access its html analytics dashboard. For instance, if it is running the default configuration it would be at (http://localhost:8080/mcpfier/analytics).
+
+![analytics](images/analytics_screenshot.png)
 
 **Note**: The analytics database directory must exist before starting MCPFier. Create the directory manually:
 
