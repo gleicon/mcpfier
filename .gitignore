@@ -5,3 +5,6 @@ mcpfier
 # Added by goreleaser init:
 dist/
 *.log
+website/
+.DS_Store
+*.swp

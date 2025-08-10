@@ -1,12 +1,10 @@
 # MCPFier
 
-MCPFier transforms any command, script, or tool into a standardized [MCP (Model Context Protocol)](https://modelcontextprotocol.io/docs/getting-started/intro) server that LLMs can use seamlessly. 
+MCPFier transforms any command, script, or tool into a standardized [MCP (Model Context Protocol)](https://modelcontextprotocol.io/docs/getting-started/intro) server that LLMs can use seamlessly.
 
-You can also create commands based on internal APIs or Webhooks. It is a no code platform to quickly augment your AI development.
+A complete MCP-to-API gateway supporting three execution modes: local commands, containerized execution, and webhook/API calls. Ships with embedded analytics, authentication, and a web dashboard.
 
-Ships with a comprehensive analytics module and flexible configuration options.
-
-Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundled config for examples. All you need is a MCP client enabled environment.
+Think "GitHub Actions for MCP" with enterprise features - configure once, use everywhere with comprehensive monitoring and security.
 
 ![MCPFier Diagram](images/MCPFier_Diagram.png)
 
@@ -34,14 +32,14 @@ Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundl
 
 ## Features
 
-- **Universal Tool Interface**: Any script becomes an MCP tool
-- **Dual Transport**: STDIO for desktop, HTTP for enterprise
-- **Authentication Ready**: API keys and OAuth 2.1 support
-- **Zero Configuration**: Automatic setup for Claude Desktop
-- **Enterprise Ready**: Multi-client, authentication, analytics
-- **Container Isolation**: Local commands or Docker containers
+- **Universal Tool Interface**: Transform any script into an MCP tool
+- **Three Execution Modes**: Local commands, Docker containers, and HTTP webhooks/APIs
+- **Dual Transport**: STDIO for desktop, HTTP for enterprise deployments
+- **Complete MCP-to-API Gateway**: Full upstream API integration with authentication
+- **Authentication Ready**: API keys with granular permissions
+- **Embedded Analytics**: SQLite-based analytics with web dashboard
+- **Enterprise Ready**: Multi-client support, request logging, monitoring
 - **MCP 2025-06-18 Compliant**: Full specification compliance
-- **Analytics**: see below
 
 ## Configuration
 
@@ -66,6 +64,30 @@ commands:
     env:
       DATA_SOURCE: "production"
 
+  # Webhook/API execution
+  - name: httpbin-get
+    description: "Test GET request to httpbin.org"
+    timeout: "10s"
+    webhook:
+      url: "https://httpbin.org/get"
+      method: "GET"
+      headers:
+        User-Agent: "MCPFier/1.0"
+
+# Server configuration (HTTP mode)
+server:
+  http:
+    enabled: true
+    host: "localhost"
+    port: 8080
+    auth:
+      enabled: true
+      mode: "simple"
+      api_keys:
+        "mcpfier_dev_123456":
+          name: "Development Key"
+          permissions: ["*"]
+
 # Analytics configuration
 analytics:
   enabled: true
@@ -73,17 +95,31 @@ analytics:
   retention_days: 30
 ```
 
-### Configuration Fields
+### Command Configuration Fields
 
-| Field         | Required | Description                |
-| ------------- | -------- | -------------------------- |
-| `name`        | Yes      | Unique tool identifier     |
-| `script`      | Yes      | Command or executable path |
-| `args`        | No       | Command arguments          |
-| `description` | No       | Tool description for LLMs  |
-| `container`   | No       | Docker image for isolation |
-| `timeout`     | No       | Execution timeout          |
-| `env`         | No       | Environment variables      |
+| Field         | Required | Description                      |
+| ------------- | -------- | -------------------------------- |
+| `name`        | Yes      | Unique tool identifier           |
+| `script`      | No*      | Command or executable path       |
+| `args`        | No       | Command arguments                |
+| `description` | No       | Tool description for LLMs        |
+| `container`   | No       | Docker image for isolation       |
+| `webhook`     | No*      | Webhook configuration (see below)|
+| `timeout`     | No       | Execution timeout                |
+| `env`         | No       | Environment variables            |
+
+*Either `script` or `webhook` must be specified.
+
+### Webhook Configuration Fields
+
+| Field           | Required | Description                          |
+| --------------- | -------- | ------------------------------------ |
+| `url`          | Yes      | Target API/webhook URL               |
+| `method`       | No       | HTTP method (default: GET)           |
+| `headers`      | No       | HTTP headers                         |
+| `body`         | No       | Request body (for POST/PUT)          |
+| `auth`         | No       | Authentication configuration         |
+| `retry`        | No       | Retry policy configuration           |
 
 ### Analytics Configuration
 
@@ -176,13 +212,14 @@ View usage statistics and command performance:
 
 Analytics tracks:
 
-- Total commands executed
-- Success rates and error counts
-- Average execution times
-- Most frequently used commands
-- Upstream success and error codes
+- Command execution statistics (local, container, webhook modes)
+- HTTP server metrics with request/response tracking
+- Authentication success and failure rates
+- Upstream API call success rates and latencies
+- Error categorization and breakdown by type
+- Real-time performance monitoring
 
-If MCPFier is running on server mode you can access its html analytics dashboard. For instance, if it is running the default configuration it would be at (http://localhost:8080/mcpfier/analytics).
+The embedded web dashboard provides comprehensive analytics when running in HTTP server mode. Access at http://localhost:8080/mcpfier/analytics (default configuration).
 
 ![analytics](images/analytics_screenshot.png)
 
@@ -194,14 +231,15 @@ mkdir -p ~/.mcpfier  # For default config
 
 ## Architecture
 
-MCPFier uses a clean modular architecture:
+MCPFier implements a modular architecture with three execution engines:
 
 - **Configuration**: YAML-based command definitions with auto-discovery
 - **Transport**: Dual-mode support (STDIO for desktop, HTTP for enterprise)
-- **Execution**: Pluggable backends (local, Docker, future: Kubernetes, Lambda)
-- **Authentication**: API keys and OAuth 2.1 using [mcp-go](https://github.com/mark3labs/mcp-go)
+- **Execution Engines**: Local commands, Docker containers, and HTTP webhooks/APIs
+- **Analytics Engine**: SQLite-based embedded analytics with web dashboard
+- **Authentication**: API key-based authentication with granular permissions
 - **MCP Server**: [MCP 2025-06-18](https://modelcontextprotocol.io/specification/2025-06-18) compliant
-- **Security**: Container isolation, authentication, resource limits
+- **Security**: Container isolation, authentication, request validation, resource limits
 
 ## Security
 
@@ -211,10 +249,12 @@ MCPFier uses a clean modular architecture:
 
 ## Use Cases
 
-- **Enterprise Integration**: Expose n8n workflows, internal APIs, data pipelines
+- **Enterprise Integration**: Transform internal APIs and workflows into MCP tools
 - **Development Tools**: Linting, testing, building, deployment automation  
 - **Infrastructure**: Health checks, log analysis, backup operations
-- **AI Agents**: Enable LLMs to use specialized tools and services
+- **API Gateway**: Bridge MCP clients to existing REST APIs and webhooks
+- **Hybrid Workflows**: Combine local scripts, containerized tools, and external APIs
+- **AI Agents**: Enable LLMs to access enterprise systems and external services
 
 ## Testing
 
