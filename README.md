@@ -4,9 +4,11 @@ MCPFier transforms any command, script, or tool into a standardized [MCP (Model 
 
 You can also create commands based on internal APIs or Webhooks. It is a no code platform to quickly augment your AI development.
 
-There is a comprehensive analytics module and flexible configuration options.
+Ships with a comprehensive analytics module and flexible configuration options.
 
 Think "GitHub Actions for MCP" - configure once, use everywhere. Check the bundled config for examples. All you need is a MCP client enabled environment.
+
+![MCPFier Diagram](images/MCPFier_Diagram.png)
 
 ## Quick Start for Claude Desktop
 
