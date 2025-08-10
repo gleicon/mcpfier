@@ -163,11 +163,28 @@ Examples:
 
 ## Installation
 
+### From Source
+
 ```bash
 git clone https://github.com/gleicon/mcpfier.git
 cd mcpfier
 go build -o mcpfier
 ```
+
+### Docker Container
+
+```bash
+# Build image
+docker build -t mcpfier:latest .
+
+# Run with persistent volumes
+docker run -d --name mcpfier -p 8080:8080 \
+  -v /opt/mcpfier/config:/app/config:ro \
+  -v /opt/mcpfier/data:/app/data \
+  mcpfier:latest
+```
+
+**For complete Docker deployment guide, see [DOCKER.md](DOCKER.md)**
 
 ## Usage Modes
 
@@ -268,6 +285,8 @@ go test ./...              # Run all tests
 ## Documentation
 
 - **[SERVER.md](SERVER.md)** - HTTP server setup and authentication guide
+- **[DOCKER.md](DOCKER.md)** - Container deployment with persistent volumes
+- **[SECURITY.md](SECURITY.md)** - Security best practices and configuration
 - **[SETUP.md](SETUP.md)** - Detailed setup instructions  
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture
 - **[AUTHENTICATION.md](AUTHENTICATION.md)** - Technical details on authentication

@@ -1,0 +1,41 @@
+# Build artifacts
+mcpfier
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+test_*
+
+# Documentation
+*.md
+docs/
+website/
+
+# Git
+.git
+.gitignore
+
+# Analytics and logs
+*.db
+*.db-*
+*.log
+logs/
+.crush/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*
