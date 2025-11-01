@@ -4,35 +4,36 @@ commands:
     args: ["https://wttr.in/?format=3"]
     description: "Get current weather information"
     timeout: "10s"
-  
+
   - name: echo-test
     script: echo
     args: ["Hello from MCPFier!"]
     description: "Simple echo command for testing MCP server functionality"
     timeout: "10s"
-  
+
   - name: list-files
     script: ls
     args: ["-la"]
     description: "List files in the current directory with detailed information"
     timeout: "30s"
-  
+
   - name: screenshot
     script: "/usr/bin/chromium"
-    args: ["--headless", "--disable-gpu", "--screenshot", "--window-size=1280,720"]
+    args:
+      ["--headless", "--disable-gpu", "--screenshot", "--window-size=1280,720"]
     description: "Take a screenshot of a webpage using headless Chrome"
     container: "browserless/chrome:latest"
     timeout: "60s"
     env:
       DISPLAY: ":99"
-  
+
   - name: python-script
     script: "python"
     args: ["-c", "print('Hello from containerized Python!')"]
     description: "Run Python script in isolated container environment"
     container: "python:3.9-slim"
     timeout: "30s"
-  
+
   # Webhook/API Examples - Remote execution capabilities
   - name: httpbin-get
     description: "Test GET request to httpbin.org"
@@ -42,7 +43,7 @@ commands:
       method: "GET"
       headers:
         User-Agent: "MCPFier-Test/1.0"
-  
+
   - name: httpbin-post-json
     description: "Test POST request with JSON data to httpbin.org"
     timeout: "10s"
@@ -53,7 +54,7 @@ commands:
       body_format: "json"
       headers:
         X-Custom-Header: "mcpfier-webhook"
-  
+
   - name: github-api-user
     description: "Get user information from GitHub API (requires token)"
     timeout: "10s"
@@ -67,7 +68,7 @@ commands:
         max_retries: 2
         delay: "1s"
         backoff: "exponential"
-  
+
   - name: api-with-key-auth
     description: "Example API call with API key authentication"
     timeout: "15s"
@@ -82,7 +83,7 @@ commands:
         max_retries: 3
         delay: "2s"
         status_codes: [429, 502, 503, 504]
-  
+
   - name: webhook-basic-auth
     description: "Example with basic authentication"
     timeout: "10s"
@@ -99,85 +100,52 @@ server:
   # Default transport mode (auto-selected based on CLI args)
   # --mcp uses STDIO transport (no auth, single client)
   # --server uses HTTP transport (with auth, multiple clients)
-  
+
   http:
     port: 8080
-    host: "localhost"  # Bind address
-    
+    host: "localhost" # Bind address
+
+    # TLS/HTTPS configuration (optional)
+    tls:
+      enabled: false
+      # For production, enable TLS with your certificates:
+      # enabled: true
+      # cert_file: "/path/to/cert.pem"
+      # key_file: "/path/to/key.pem"
+
     # Authentication configuration
     auth:
       enabled: true
-      mode: "simple"  # "simple" or "enterprise"
-      
-      # Simple mode: API keys and basic auth
+      mode: "simple" # Currently only "simple" is implemented
+
+      # Simple mode: API key authentication
       simple:
-        # API key authentication
         api_keys:
           - key: "mcpfier_dev_123456"
             name: "development"
             description: "Development environment key"
-            permissions: ["*"]  # All tools
-            
-          - key: "mcpfier_prod_789012"  
+            permissions: ["*"] # All tools
+
+          - key: "mcpfier_prod_789012"
             name: "production"
             description: "Production environment key"
-            permissions: ["weather", "echo-test"]  # Limited tools
-            
-        # Optional: Basic authentication (username/password)
-        # basic_auth:
-        #   enabled: false
-        #   users:
-        #     - username: "admin"
-        #       password_hash: "$2a$10$..."  # bcrypt hash
-        #       permissions: ["*"]
-      
-      # Enterprise mode: Full OAuth 2.1 compliance
-      enterprise:
-        oauth21:
-          enabled: true
-          issuer: "https://auth.example.com"
-          audience: ["https://mcpfier.example.com/api"]
-          
-          # Client configuration for confidential clients
-          client_id: "${OAUTH_CLIENT_ID}"
-          client_secret: "${OAUTH_CLIENT_SECRET}"
-          
-          # Authorization server endpoints (auto-discovered if not specified)
-          authorization_endpoint: "https://auth.example.com/authorize"
-          token_endpoint: "https://auth.example.com/token"
-          jwks_uri: "https://auth.example.com/.well-known/jwks.json"
-          
-          # Supported scopes
-          scopes: ["mcp:read", "mcp:execute", "mcp:admin"]
-          
-        # Role-based access control
-        rbac:
-          enabled: true
-          roles:
-            - name: "admin"
-              permissions: ["*"]
-              description: "Full access to all tools"
-              
-            - name: "developer"
-              permissions: ["echo-test", "list-files", "weather"]
-              description: "Development tools access"
-              
-            - name: "analyst" 
-              permissions: ["weather", "search"]
-              description: "Read-only data access"
-          
-          # User-role mappings (for OAuth claims)
-          user_roles:
-            "user123@example.com": ["developer"]
-            "admin@example.com": ["admin"]
-            
+            permissions: ["weather", "echo-test"] # Limited tools
+
+      # FUTURE: Enterprise mode with OAuth 2.1 (Planned for v2.0)
+      # Will include:
+      # - Full OAuth 2.1 / OIDC compliance
+      # - Role-based access control (RBAC)
+      # - JWT token validation
+      # - Authorization server integration
+      # See AUTHENTICATION_PLAN.md for roadmap
+
     # CORS configuration for web clients
     cors:
       enabled: true
       allowed_origins: ["http://localhost:3000", "https://app.example.com"]
       allowed_methods: ["GET", "POST", "OPTIONS"]
       allowed_headers: ["Authorization", "Content-Type", "X-API-Key"]
-      
+
     # Rate limiting
     rate_limit:
       enabled: true
@@ -187,5 +155,5 @@ server:
 # Analytics configuration
 analytics:
   enabled: true
-  database_path: "~/.mcpfier/analytics.db"  # Now supports ~ expansion
+  database_path: "~/.mcpfier/analytics.db" # Now supports ~ expansion
   retention_days: 30

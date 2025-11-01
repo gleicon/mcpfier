@@ -98,12 +98,51 @@ commands:
 
 ## Network Security
 
+### TLS/HTTPS Configuration
+
+MCPFier supports HTTPS with custom certificates for production deployments.
+
+#### Enable TLS
+
+```yaml
+server:
+  http:
+    port: 8443
+    host: "0.0.0.0"
+    tls:
+      enabled: true
+      cert_file: "/etc/mcpfier/certs/cert.pem"
+      key_file: "/etc/mcpfier/certs/key.pem"
+```
+
+#### Generate Self-Signed Certificate (Development Only)
+
+```bash
+openssl req -x509 -newkey rsa:4096 -nodes \
+  -keyout key.pem -out cert.pem -days 365 \
+  -subj "/CN=localhost"
+```
+
+#### Production Certificates
+
+Use certificates from a trusted Certificate Authority:
+- Let's Encrypt (free, automated with certbot)
+- Commercial CA (DigiCert, Sectigo, etc.)
+- Internal PKI for enterprise environments
+
+#### Alternative: Reverse Proxy
+
+For complex deployments, use a reverse proxy (nginx, Caddy, Traefik):
+- Proxy handles TLS termination
+- MCPFier runs on localhost without TLS
+- Easier certificate management and load balancing
+
 ### HTTP Server
 
-- **TLS Support**: Configure HTTPS for production deployments
+- **TLS Support**: Built-in HTTPS with custom certificates or reverse proxy
 - **CORS Policy**: Configurable cross-origin request handling
 - **Request Validation**: JSON-RPC 2.0 compliance checking
-- **Rate Limiting**: Configurable request rate limits
+- **Rate Limiting**: Token bucket rate limiting per client
 
 ### Logging and Monitoring
 
@@ -124,8 +163,8 @@ commands:
 ### Production Environment
 
 - **Authentication**: Always enable authentication in production
+- **TLS/HTTPS**: Enable TLS with valid certificates (see configuration below)
 - **Container Mode**: Use containers for all untrusted operations
-- **Network Security**: Deploy behind reverse proxy with TLS
 - **Monitoring**: Enable comprehensive logging and analytics
 - **Resource Limits**: Configure timeouts and resource constraints
 - **Key Rotation**: Regularly rotate API keys

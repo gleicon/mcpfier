@@ -8,11 +8,28 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/gleicon/mcpfier/internal/config"
 )
+
+// envVarPattern matches environment variables in the format ${VAR_NAME}
+var envVarPattern = regexp.MustCompile(`\$\{([^}]+)\}`)
+
+// expandEnvVars expands environment variables in the format ${VAR_NAME}
+func expandEnvVars(s string) string {
+	return envVarPattern.ReplaceAllStringFunc(s, func(match string) string {
+		// Extract variable name (remove ${ and })
+		varName := match[2 : len(match)-1]
+		if value := os.Getenv(varName); value != "" {
+			return value
+		}
+		return match // Return original if env var not found
+	})
+}
 
 // WebhookExecutor handles webhook/API calls
 type WebhookExecutor struct {
@@ -35,7 +52,7 @@ func (e *WebhookExecutor) Execute(ctx context.Context, cmd *config.Command) (str
 	}
 
 	webhook := cmd.Webhook
-	
+
 	// Set default method if not specified
 	method := webhook.Method
 	if method == "" {
@@ -60,7 +77,7 @@ func (e *WebhookExecutor) Execute(ctx context.Context, cmd *config.Command) (str
 
 	// Set headers
 	e.setHeaders(req, webhook)
-	
+
 	// Set authentication
 	if err := e.setAuthentication(req, webhook.Auth); err != nil {
 		return "", fmt.Errorf("failed to set authentication: %w", err)
@@ -152,28 +169,32 @@ func (e *WebhookExecutor) setAuthentication(req *http.Request, auth *config.Webh
 		if auth.Token == "" {
 			return fmt.Errorf("bearer token is required")
 		}
-		req.Header.Set("Authorization", "Bearer "+auth.Token)
-	
+		token := expandEnvVars(auth.Token)
+		req.Header.Set("Authorization", "Bearer "+token)
+
 	case "api_key":
 		if auth.Key == "" {
 			return fmt.Errorf("API key is required")
 		}
+		key := expandEnvVars(auth.Key)
 		header := auth.Header
 		if header == "" {
 			header = "X-API-Key"
 		}
-		req.Header.Set(header, auth.Key)
-	
+		req.Header.Set(header, key)
+
 	case "basic":
 		if auth.User == "" || auth.Pass == "" {
 			return fmt.Errorf("username and password are required for basic auth")
 		}
-		credentials := base64.StdEncoding.EncodeToString([]byte(auth.User + ":" + auth.Pass))
+		user := expandEnvVars(auth.User)
+		pass := expandEnvVars(auth.Pass)
+		credentials := base64.StdEncoding.EncodeToString([]byte(user + ":" + pass))
 		req.Header.Set("Authorization", "Basic "+credentials)
-	
+
 	case "oauth":
 		return fmt.Errorf("OAuth authentication not yet implemented")
-	
+
 	default:
 		return fmt.Errorf("unsupported authentication type: %s", auth.Type)
 	}
@@ -186,7 +207,7 @@ func (e *WebhookExecutor) executeWithRetry(req *http.Request, retryConfig *confi
 	maxRetries := 3
 	delay := time.Second
 	backoff := "exponential"
-	
+
 	if retryConfig != nil {
 		if retryConfig.MaxRetries > 0 {
 			maxRetries = retryConfig.MaxRetries
@@ -237,7 +258,7 @@ func (e *WebhookExecutor) executeWithRetry(req *http.Request, retryConfig *confi
 func (e *WebhookExecutor) shouldRetry(statusCode int, retryConfig *config.WebhookRetry) bool {
 	// Default retry on server errors and specific client errors
 	defaultRetryCodes := []int{429, 502, 503, 504}
-	
+
 	if retryConfig != nil && len(retryConfig.StatusCodes) > 0 {
 		for _, code := range retryConfig.StatusCodes {
 			if code == statusCode {

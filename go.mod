@@ -3,7 +3,8 @@ module github.com/gleicon/mcpfier
 go 1.24.5
 
 require (
-	github.com/mark3labs/mcp-go v0.37.0
+	github.com/mark3labs/mcp-go v0.42.0
+	golang.org/x/time v0.14.0
 	gopkg.in/yaml.v2 v2.4.0
 	modernc.org/sqlite v1.38.2
 )
