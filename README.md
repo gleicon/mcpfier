@@ -34,12 +34,14 @@ Think "GitHub Actions for MCP" with enterprise features - configure once, use ev
 
 - **Universal Tool Interface**: Transform any script into an MCP tool
 - **Three Execution Modes**: Local commands, Docker containers, and HTTP webhooks/APIs
-- **Dual Transport**: STDIO for desktop, HTTP for enterprise deployments
+- **Dual Transport**: STDIO for desktop, HTTP/SSE for enterprise deployments
 - **Complete MCP-to-API Gateway**: Full upstream API integration with authentication
-- **Authentication Ready**: API keys with granular permissions
-- **Embedded Analytics**: SQLite-based analytics with web dashboard
+- **Secret Management**: Environment variable expansion for secure credential handling
+- **Rate Limiting**: Token bucket rate limiting per client (API key or IP)
+- **Authentication Ready**: API keys with granular per-tool permissions
+- **Embedded Analytics**: SQLite-based analytics with real-time web dashboard
 - **Enterprise Ready**: Multi-client support, request logging, monitoring
-- **MCP 2025-06-18 Compliant**: Full specification compliance
+- **MCP Compliant**: Based on mcp-go v0.42.0
 
 ## Configuration
 
@@ -128,6 +130,38 @@ analytics:
 | `enabled`        | No       | Enable/disable analytics (default: false)   |
 | `database_path`  | No       | SQLite database path (supports ~ expansion) |
 | `retention_days` | No       | Days to retain analytics data               |
+
+### Rate Limiting Configuration
+
+| Field                 | Required | Description                                 |
+| --------------------- | -------- | ------------------------------------------- |
+| `enabled`             | No       | Enable/disable rate limiting (default: false) |
+| `requests_per_minute` | No       | Max requests per minute per client (default: 60) |
+| `burst_size`          | No       | Burst size for token bucket (default: 10)   |
+
+Rate limiting is applied per client, identified by API key or IP address.
+
+### Environment Variable Expansion
+
+Webhook authentication supports environment variable expansion for secure credential handling:
+
+```yaml
+commands:
+  - name: github-api
+    webhook:
+      url: "https://api.github.com/user"
+      auth:
+        type: "bearer"
+        token: "${GITHUB_TOKEN}"  # Reads from environment
+```
+
+Set the environment variable before starting MCPFier:
+```bash
+export GITHUB_TOKEN="ghp_your_token_here"
+./mcpfier --server
+```
+
+Supported in all webhook auth fields: `token`, `key`, `user`, `pass`.
 
 ### Configuration File Discovery
 

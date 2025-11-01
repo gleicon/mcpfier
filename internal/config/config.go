@@ -17,18 +17,18 @@ type Command struct {
 	Timeout     string            `yaml:"timeout"`
 	Env         map[string]string `yaml:"env"`
 	// Webhook/API configuration
-	Webhook     *WebhookConfig    `yaml:"webhook,omitempty"`
+	Webhook *WebhookConfig `yaml:"webhook,omitempty"`
 }
 
 // WebhookConfig represents webhook/API call configuration
 type WebhookConfig struct {
-	URL         string            `yaml:"url"`
-	Method      string            `yaml:"method"`      // GET, POST, PUT, DELETE, etc.
-	Headers     map[string]string `yaml:"headers"`     // Custom headers
-	Body        string            `yaml:"body"`        // Request body template
-	BodyFormat  string            `yaml:"body_format"` // json, xml, form, text
-	Auth        *WebhookAuth      `yaml:"auth,omitempty"`
-	Retry       *WebhookRetry     `yaml:"retry,omitempty"`
+	URL        string            `yaml:"url"`
+	Method     string            `yaml:"method"`      // GET, POST, PUT, DELETE, etc.
+	Headers    map[string]string `yaml:"headers"`     // Custom headers
+	Body       string            `yaml:"body"`        // Request body template
+	BodyFormat string            `yaml:"body_format"` // json, xml, form, text
+	Auth       *WebhookAuth      `yaml:"auth,omitempty"`
+	Retry      *WebhookRetry     `yaml:"retry,omitempty"`
 }
 
 // WebhookAuth represents authentication for webhook calls
@@ -43,10 +43,10 @@ type WebhookAuth struct {
 
 // WebhookRetry represents retry configuration
 type WebhookRetry struct {
-	MaxRetries int      `yaml:"max_retries"` // Default: 3
-	Backoff    string   `yaml:"backoff"`     // exponential, linear, fixed
-	Delay      string   `yaml:"delay"`       // Initial delay, e.g. "1s"
-	StatusCodes []int   `yaml:"status_codes,omitempty"` // Which status codes to retry
+	MaxRetries  int    `yaml:"max_retries"`            // Default: 3
+	Backoff     string `yaml:"backoff"`                // exponential, linear, fixed
+	Delay       string `yaml:"delay"`                  // Initial delay, e.g. "1s"
+	StatusCodes []int  `yaml:"status_codes,omitempty"` // Which status codes to retry
 }
 
 // Config holds all the commands from the YAML file
@@ -63,16 +63,32 @@ type ServerConfig struct {
 
 // HTTPConfig holds HTTP server configuration
 type HTTPConfig struct {
-	Port int        `yaml:"port"`
-	Host string     `yaml:"host"`
-	Auth AuthConfig `yaml:"auth"`
-	CORS CORSConfig `yaml:"cors"`
+	Port      int             `yaml:"port"`
+	Host      string          `yaml:"host"`
+	TLS       TLSConfig       `yaml:"tls"`
+	Auth      AuthConfig      `yaml:"auth"`
+	CORS      CORSConfig      `yaml:"cors"`
+	RateLimit RateLimitConfig `yaml:"rate_limit"`
+}
+
+// TLSConfig holds TLS/HTTPS configuration
+type TLSConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	CertFile string `yaml:"cert_file"`
+	KeyFile  string `yaml:"key_file"`
+}
+
+// RateLimitConfig holds rate limiting configuration
+type RateLimitConfig struct {
+	Enabled           bool `yaml:"enabled"`
+	RequestsPerMinute int  `yaml:"requests_per_minute"`
+	BurstSize         int  `yaml:"burst_size"`
 }
 
 // AuthConfig holds authentication configuration
 type AuthConfig struct {
 	Enabled bool             `yaml:"enabled"`
-	Mode    string           `yaml:"mode"` // "simple" or "enterprise"
+	Mode    string           `yaml:"mode"` // Currently only "simple" is supported
 	Simple  SimpleAuthConfig `yaml:"simple"`
 }
 
@@ -99,9 +115,9 @@ type CORSConfig struct {
 
 // AnalyticsConfig holds analytics configuration
 type AnalyticsConfig struct {
-	Enabled      bool   `yaml:"enabled"`
-	DatabasePath string `yaml:"database_path"`
-	RetentionDays int   `yaml:"retention_days"`
+	Enabled       bool   `yaml:"enabled"`
+	DatabasePath  string `yaml:"database_path"`
+	RetentionDays int    `yaml:"retention_days"`
 }
 
 // Load loads the configuration from a YAML file
@@ -144,6 +160,16 @@ func (c *Config) applyDefaults() {
 	if c.Server.HTTP.CORS.Enabled && len(c.Server.HTTP.CORS.AllowedHeaders) == 0 {
 		c.Server.HTTP.CORS.AllowedHeaders = []string{"Authorization", "Content-Type", "X-API-Key"}
 	}
+
+	// Rate limit defaults
+	if c.Server.HTTP.RateLimit.Enabled {
+		if c.Server.HTTP.RateLimit.RequestsPerMinute == 0 {
+			c.Server.HTTP.RateLimit.RequestsPerMinute = 60
+		}
+		if c.Server.HTTP.RateLimit.BurstSize == 0 {
+			c.Server.HTTP.RateLimit.BurstSize = 10
+		}
+	}
 }
 
 // LoadFromDefaultPath loads configuration using the default search paths
@@ -160,34 +186,34 @@ func FindConfigFile() string {
 			return configPath
 		}
 	}
-	
+
 	// Try various config file locations
 	candidates := []string{
-		"config.yaml",                    // Current directory
-		"./config.yaml",                 // Explicit current directory
+		"config.yaml",   // Current directory
+		"./config.yaml", // Explicit current directory
 	}
-	
+
 	// Try config next to executable
 	if execPath, err := os.Executable(); err == nil {
 		execDir := filepath.Dir(execPath)
 		candidates = append(candidates, filepath.Join(execDir, "config.yaml"))
 	}
-	
+
 	// Try user's home directory
 	if homeDir, err := os.UserHomeDir(); err == nil {
 		candidates = append(candidates, filepath.Join(homeDir, ".mcpfier", "config.yaml"))
 		candidates = append(candidates, filepath.Join(homeDir, "mcpfier", "config.yaml"))
 	}
-	
+
 	// Try system-wide locations
 	candidates = append(candidates, "/etc/mcpfier/config.yaml")
-	
+
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate
 		}
 	}
-	
+
 	// Default to config.yaml if nothing found
 	return "config.yaml"
 }
