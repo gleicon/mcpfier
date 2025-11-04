@@ -2,6 +2,45 @@
 
 All notable changes to MCPFier will be documented in this file.
 
+## [1.0.4] - 2025-11-03
+
+### Added
+- Three API key storage formats: plain text, environment variables, hashed (SHA-256)
+- Environment variable expansion in API keys using ${VAR_NAME} syntax
+- Hashed API key support with hash: prefix for secure storage
+- Key generation and hashing utility: cmd/hashkey/main.go
+- Comprehensive API key authentication tests
+- AUTHENTICATION_NOTES.md documenting current auth implementation and security best practices
+- STRATEGY.md consolidating all strategic planning
+- internal/config/secrets.go for secure key handling
+
+### Changed
+- Verified and documented that API key authentication is fully working
+- Cleaned up docs folder (removed implementation plans for completed features)
+- Updated version to v1.0.4 across documentation
+- Enhanced internal/auth/auth.go to support hashed key validation
+- Updated config processing to expand environment variables and handle hashed keys
+
+### Fixed
+- Corrected documentation that incorrectly stated auth was not implemented
+- Authentication has been working since v0.1.2, now properly documented
+- Environment variable expansion now properly validates undefined variables
+
+### Security
+- API keys can now be stored as SHA-256 hashes in config.yaml
+- Environment variable support prevents committing secrets to git
+- Backward compatible: existing plain text configs continue to work
+- SHA-256 chosen over bcrypt for performance (API keys validated on every request)
+- Cryptographically random key generation with base64url encoding
+
+### Documentation
+- Consolidated 9 strategic analysis documents into single STRATEGY.md
+- Updated AUTHENTICATION_NOTES.md with complete implementation details, security considerations, and migration guide
+- Added examples for all three key storage formats
+- Documented key generation utility usage
+- Removed obsolete TLS_IMPLEMENTATION_PLAN.md (feature complete)
+- Removed obsolete test_logging_analytics.md
+
 ## [0.1.3] - 2025-10-31
 
 ### Added

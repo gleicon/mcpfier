@@ -119,17 +119,35 @@ server:
       mode: "simple" # Currently only "simple" is implemented
 
       # Simple mode: API key authentication
+      # Supports three key storage formats:
+      # 1. Plain text: "mcpfier_dev_123456"
+      # 2. Environment variable: "${MCPFIER_API_KEY}"
+      # 3. Hashed (SHA-256): "hash:95e904704170a1539c636551759916c31758d6302b43c4e80e11a44a0a2fbb40"
+      #
+      # Generate keys: go build -o bin/hashkey ./cmd/hashkey && ./bin/hashkey -generate
       simple:
         api_keys:
+          # Plain text key (development only)
           - key: "mcpfier_dev_123456"
             name: "development"
             description: "Development environment key"
             permissions: ["*"] # All tools
 
+          # Production key (restricted permissions)
           - key: "mcpfier_prod_789012"
             name: "production"
             description: "Production environment key"
             permissions: ["weather", "echo-test"] # Limited tools
+
+          # Example: Environment variable (recommended for production)
+          # - key: "${MCPFIER_CLIENT_KEY}"
+          #   name: "client1"
+          #   permissions: ["*"]
+
+          # Example: Hashed key (most secure)
+          # - key: "hash:80744d96caaa2acddd1cfc0e242757867353b659e51f5b3bb44f2f2159a345d5"
+          #   name: "secure-client"
+          #   permissions: ["*"]
 
       # FUTURE: Enterprise mode with OAuth 2.1 (Planned for v2.0)
       # Will include:

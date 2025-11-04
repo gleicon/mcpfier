@@ -71,7 +71,7 @@ func extractAuth(r *http.Request, cfg *config.AuthConfig) (*AuthContext, error) 
 func extractSimpleAuth(r *http.Request, cfg *config.SimpleAuthConfig) (*AuthContext, error) {
 	// Try X-API-Key header first
 	apiKey := r.Header.Get("X-API-Key")
-	
+
 	// Try Authorization header with ApiKey prefix
 	if apiKey == "" {
 		authHeader := r.Header.Get("Authorization")
@@ -86,7 +86,19 @@ func extractSimpleAuth(r *http.Request, cfg *config.SimpleAuthConfig) (*AuthCont
 
 	// Find matching API key in configuration
 	for _, key := range cfg.APIKeys {
-		if key.Key == apiKey {
+		// Check if stored key is hashed (64-char hex string)
+		isHashed := config.IsHashedKey(key.Key)
+
+		var match bool
+		if isHashed {
+			// Compare hash of provided key with stored hash
+			match = config.CompareAPIKey(apiKey, key.Key)
+		} else {
+			// Direct comparison for plain text keys
+			match = key.Key == apiKey
+		}
+
+		if match {
 			return &AuthContext{
 				UserID:      key.Name,
 				ClientName:  key.Name,

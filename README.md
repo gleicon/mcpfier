@@ -38,7 +38,7 @@ Think "GitHub Actions for MCP" with enterprise features - configure once, use ev
 - **Complete MCP-to-API Gateway**: Full upstream API integration with authentication
 - **Secret Management**: Environment variable expansion for secure credential handling
 - **Rate Limiting**: Token bucket rate limiting per client (API key or IP)
-- **Authentication Ready**: API keys with granular per-tool permissions
+- **Secure API Keys**: Three storage formats (plain text, environment variables, hashed SHA-256)
 - **Embedded Analytics**: SQLite-based analytics with real-time web dashboard
 - **Enterprise Ready**: Multi-client support, request logging, monitoring
 - **MCP Compliant**: Based on mcp-go v0.42.0
@@ -79,16 +79,18 @@ commands:
 # Server configuration (HTTP mode)
 server:
   http:
-    enabled: true
-    host: "localhost"
     port: 8080
     auth:
       enabled: true
       mode: "simple"
-      api_keys:
-        "mcpfier_dev_123456":
-          name: "Development Key"
-          permissions: ["*"]
+      simple:
+        api_keys:
+          - key: "mcpfier_dev_123456"
+            name: "development"
+            permissions: ["*"]
+          - key: "${PROD_API_KEY}"
+            name: "production"
+            permissions: ["*"]
 
 # Analytics configuration
 analytics:
@@ -141,9 +143,45 @@ analytics:
 
 Rate limiting is applied per client, identified by API key or IP address.
 
+### API Key Storage
+
+MCPFier supports three API key storage formats for different security requirements:
+
+1. **Plain Text** - Simple for development:
+```yaml
+api_keys:
+  - key: "mcpfier_dev_123456"
+    name: "development"
+    permissions: ["*"]
+```
+
+2. **Environment Variables** - Recommended for production:
+```yaml
+api_keys:
+  - key: "${MCPFIER_API_KEY}"
+    name: "production"
+    permissions: ["*"]
+```
+
+3. **Hashed Keys** - Maximum security (SHA-256):
+```yaml
+api_keys:
+  - key: "hash:95e904704170a1539c636551759916c31758d6302b43c4e80e11a44a0a2fbb40"
+    name: "production"
+    permissions: ["*"]
+```
+
+Generate and hash keys using the included utility:
+```bash
+go build -o bin/hashkey ./cmd/hashkey
+./bin/hashkey -generate
+```
+
+For complete API key setup and migration guide, see [docs/QUICK_START_API_KEYS.md](docs/QUICK_START_API_KEYS.md).
+
 ### Environment Variable Expansion
 
-Webhook authentication supports environment variable expansion for secure credential handling:
+Webhook authentication also supports environment variable expansion for secure credential handling:
 
 ```yaml
 commands:
@@ -318,12 +356,17 @@ go test ./...              # Run all tests
 
 ## Documentation
 
-- **[SERVER.md](SERVER.md)** - HTTP server setup and authentication guide
+### Quick Guides
+- **[docs/QUICK_START_API_KEYS.md](docs/QUICK_START_API_KEYS.md)** - 5-minute API key setup guide
+- **[docs/API_KEY_STORAGE.md](docs/API_KEY_STORAGE.md)** - Complete API key storage and migration guide
+
+### Detailed Documentation
+- **[SERVER.md](SERVER.md)** - HTTP server setup guide
+- **[docs/AUTHENTICATION_NOTES.md](docs/AUTHENTICATION_NOTES.md)** - Authentication implementation details
 - **[DOCKER.md](DOCKER.md)** - Container deployment with persistent volumes
 - **[SECURITY.md](SECURITY.md)** - Security best practices and configuration
 - **[SETUP.md](SETUP.md)** - Detailed setup instructions  
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture
-- **[AUTHENTICATION.md](AUTHENTICATION.md)** - Technical details on authentication
 
 ## External References
 

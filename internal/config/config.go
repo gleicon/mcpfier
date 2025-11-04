@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 
@@ -169,6 +170,12 @@ func (c *Config) applyDefaults() {
 		if c.Server.HTTP.RateLimit.BurstSize == 0 {
 			c.Server.HTTP.RateLimit.BurstSize = 10
 		}
+	}
+
+	// Process API keys (expand env vars, handle hashed keys)
+	if err := c.ProcessAPIKeys(); err != nil {
+		// Log error but don't fail - auth can be disabled
+		log.Printf("Warning: API key processing error: %v", err)
 	}
 }
 
